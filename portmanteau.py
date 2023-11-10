@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import sqlite3
 from sqlite3 import Connection
 import ast
@@ -213,11 +213,14 @@ def get_orthography(word: str, word_segment: list[str], end: bool=False) -> str:
         return None
 
 
-@app.route('/', methods=['GET', 'POST'])
-def run():
+@app.route('/answer', methods=['POST'])
+def get_answer():
     if request.method == 'POST':
-        word1 = request.form["word1"]
-        word2 = request.form["word2"]
+        data = request.get_json()
+        # Access specific values from the JSON data
+        word1 = data.get('word1')
+        word2 = data.get('word2')
+        response = ""
 
         connection = get_db_connection()
         word1_pronunciations = search_pronunciation(connection, word1)
@@ -230,7 +233,7 @@ def run():
             if not word2_pronunciations:
                 words_not_found.append(word2)
             portmanteau = last_resort_portmanteau(word1, word2)
-            return render_template('last_resort_portmanteau.html', word1=word1, word2=word2, portmanteau=portmanteau, not_found=words_not_found)
+            response = {"error": f"The word(s) {words_not_found} are not present in the source dictionary. A last-resort portmanteau for {word1} and {word2} is {portmanteau}."}
         
         else:
             match = get_match(word1_pronunciations, word2_pronunciations)
@@ -249,7 +252,7 @@ def run():
                 reverse = True
                 word2_segment, word1_segment = basic_portmanteau(word2_pronunciations[0], word1_pronunciation[0])
                 if not (word1_segment or word2_segment):
-                    return render_template('no_portmanteau.html', word1, word2)
+                    response = {"error": f"There is no portmanteau that can be formed from the words {word1_segment} and {word2_segment}."}
             
             if reverse:
                 word1_segment = get_orthography(word1, word1_segment, True)
@@ -267,16 +270,20 @@ def run():
                 if not word2_segment:
                     weird_spellings.append(word2)
                 portmanteau = last_resort_portmanteau(word1, word2)
-                return render_template('weird_spellings.html', word1, word2, portmanteau, weird_spellings)
+                response = {"success": f"The word(s) {weird_spellings} spell their phonemes in ways we haven't accounted for yet. A last-resort portmanteau for {word1} and {word2} is {portmanteau}"}
 
             if phonological:
-                return render_template('overlapping_blend.html', word1=word1, word2=word2, portmanteau=portmanteau)
+                response = {"success": f"The overlapping blend of {word1} and {word2} is {portmanteau}."}
             elif reverse:
-                return render_template('reverse_blend.html', word1=word1, word2=word2, portmanteau=portmanteau)
+                response = {"success": f"There is no phonologically overlapping blend of the words {word1} and {word2}, nor is there a good non-overlapping portmanteau that can be generated with {word1} first and {word2} second. A reverse-order non-overlapping portmanteau is {portmanteau}."}
             else:
-                return render_template('non-overlapping_blend.html', word1=word1, word2=word2, portmanteau=portmanteau)
-    else:
-        return render_template('input.html')
+                response = {"success": f"There is no phonologically overlapping blend of the words {word1} and {word2}. A non-overlapping portmanteau is {portmanteau}."}
+        print(response)
+        return jsonify(response)
+
+@app.route('/', methods=['GET', 'POST'])
+def run():
+    return render_template('input.html')
     
 @app.route('/about', methods=['GET'])
 def display():

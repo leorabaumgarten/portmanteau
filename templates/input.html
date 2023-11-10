@@ -1,11 +1,93 @@
-<h1>Generate Portmanteau</h1>
-
-<form action="/" method="post">
-    <p>Enter the first word:</p>
-        <input type="text" name="word1"><br>
-    <p>Enter the second word:</p>
-        <input type="text" name="word2"><br>
-    <input type="submit" value="Search">
+{% extends 'base.html' %} {% block title %}{{ super() }} - Home{% endblock %} {%
+block head %} {% endblock %} {%block content %}
+<div class="p-10">
+  <h1 class="text-3xl">
+    Generate
+    <span
+      class="bg-gradient-to-r from-blue-600 via-green-500 to-indigo-400 inline-block text-transparent bg-clip-text"
+      >Portmanteau</span
+    >
+  </h1>
+  <p class="text-sm">
+    A word blending the sounds and combining the meanings of two others
+  </p>
+</div>
+<form
+  id="form"
+  class="flex gap-10 flex-wrap items-center justify-center md:flex-row flex-col"
+>
+  <div class="flex flex-col gap-0">
+    <label for="html">Enter the first word:</label>
+    <input
+      type="text"
+      id="word1"
+      name="word1"
+      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+    />
+  </div>
+  <div class="flex flex-col">
+    <label for="html">Enter the second word:</label>
+    <input
+      type="text"
+      id="word2"
+      name="word2"
+      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+    />
+  </div>
+  <input
+    type="submit"
+    value="Combine"
+    class="bg-gradient-to-r from-green-400 to-blue-500 hover:from-pink-500 hover:to-yellow-500 px-5 py-3"
+  />
 </form>
+<h1 class="max-w-md mt-10">
+  <p class="text-red-400" id="error"></p>
+  <p class="text-green-400" id="success"></p>
+</h1>
+<script>
+  const form = document.getElementById("form");
+  const word1 = document.getElementById("word1");
+  const word2 = document.getElementById("word2");
+  const error = document.getElementById("error");
+  const success = document.getElementById("success");
 
+  form.addEventListener("submit", function (event) {
+    // Prevent the default form submission
+    event.preventDefault();
 
+    console.log(word1.value);
+    console.log(word2.value);
+
+    const formData = {
+      word1: word1.value,
+      word2: word2.value,
+    };
+
+    fetch("/answer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // You may need additional headers based on your server requirements
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Handle the response from the server
+        console.log(data);
+        if (data.error) {
+          error.innerText = data.error;
+        }
+        if (data.success) {
+          success.innerText = data.success;
+        }
+        word1.value = "";
+        word2.value = "";
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  });
+</script>
+
+{% endblock %}
