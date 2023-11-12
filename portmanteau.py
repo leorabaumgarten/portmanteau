@@ -25,7 +25,7 @@ SPELLINGS = {"AA": ["augh", "au", "ou", "o", "a", "al"],
             "CH": ["tch", "ch", "t"],
             "D": ["d", "dd", "tt", "de", "ed"], 
             "DH": ["th", "the"],
-            "EH": ["e", "a", "ie"],
+            "EH": ["e", "a", "ie", "ue"],
             "ER": ["er", "ar", "ir", "or", "ur", "ure", "r"],
             "EY": ["ay", "ai", "a", "eigh"],
             "F": ["gh", "ff", "f", "fe"],
@@ -39,7 +39,7 @@ SPELLINGS = {"AA": ["augh", "au", "ou", "o", "a", "al"],
             "M": ["mm", "m", "mb", "mn", "me"],
             "N": ["nn", "kn", "mn", "gn", "n", "ne"],
             "NG": ["ng", "ngue"],
-            "OW": ["oa", "owe", "ow", "oe", "aoh", "oh", "o", "hoa"],
+            "OW": ["oa", "owe", "ow", "oe", "aoh", "oh", "o", "hoa", "ou", "aux"],
             "OY": ["oi", "oy", "aw"],
             "P": ["pp", "pe", "p"],
             "R": ["rr", "re", "wr", "r"],
@@ -48,7 +48,7 @@ SPELLINGS = {"AA": ["augh", "au", "ou", "o", "a", "al"],
             "T": ["tt", "te", "bt", "t"],
             "TH": ["th"],
             "UH": ["oo", "u"],
-            "UW": ["ui", "oo", "ue", "ew", "ewe", "u", "ieu", "eau", "wo"],
+            "UW": ["ui", "oo", "ue", "ew", "ewe", "u", "ieu", "eau", "wo", "eu"],
             "V": ["vv", "ve", "v"],
             "W": ["wh", "we", "w", "u"],
             "Y": ["yy", "y", ""],
@@ -205,7 +205,7 @@ def get_orthography(word: str, word_segment: list[str], end: bool=False) -> str:
         if spelling.endswith("e") and not end and len(spellings) > 1:
             spellings.remove(spelling)
             spelling = max(spellings, key=len)
-        elif (spelling.startswith("ed") or spelling.startswith("ol")) and end and len(spellings) > 1:
+        elif (spelling.startswith("ed") or spelling.startswith("ol") or spelling.startswith("ue")) and end and len(spellings) > 1:
             spellings.remove(spelling)
             spelling = max(spellings, key=len)
         return spelling
@@ -239,6 +239,7 @@ def get_answer():
             match = get_match(word1_pronunciations, word2_pronunciations)
             reverse = False
             phonological = True
+            accounted_spelling = True
             
             if match:
                 word1_pronunciation, word2_pronunciation = match[1]
@@ -257,13 +258,19 @@ def get_answer():
             if reverse:
                 word1_segment = get_orthography(word1, word1_segment, True)
                 word2_segment = get_orthography(word2, word2_segment)
-                portmanteau = word2_segment + word1_segment
+                if word1_segment is None or word2_segment is None:
+                    accounted_spelling = False
+                else:
+                    portmanteau = word2_segment + word1_segment
             else:
                 word1_segment = get_orthography(word1, word1_segment)
                 word2_segment = get_orthography(word2, word2_segment, True)
-                portmanteau =  word1_segment + word2_segment
+                if word1_segment is None or word2_segment is None:
+                    accounted_spelling = False
+                else:
+                    portmanteau =  word1_segment + word2_segment
 
-            if not (word1_segment and word2_segment):
+            if not accounted_spelling:
                 weird_spellings = []
                 if not word1_segment:
                     weird_spellings.append(word1)
